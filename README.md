@@ -18,7 +18,7 @@ how to make a video like it. The finished video is at
 | `example/soldier/` | An earlier example, "The Soldier Who Never Left" |
 | `engine/` | The renderer starter files (`main.js`, `paint.js`, `roman.js`, `motion.js`) copied into each new project |
 | `tools/` | `setup.sh` (new project), `timing.py`, `render.mjs`, `sheet.py`, `finish.sh` |
-| `vendor/toon.ts` | The Pen/face drawing library from [mromidev/claude-animated-shorts](https://github.com/mromidev/claude-animated-shorts) (MIT) |
+| `vendor/toon.ts` | The Pen/face drawing library 
 | `SKILL.md` | The instructions Claude follows to go from idea to finished MP4 |
 
 ## How the dog video was made (the original prompt)
