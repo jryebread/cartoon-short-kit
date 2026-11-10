@@ -1,0 +1,11 @@
+# macOS / tooling
+.DS_Store
+node_modules/
+# audio (your own recordings and generated stems/mixes are not published)
+*.mp3
+*.wav
+# generated renders (recreate with the README commands)
+frames/
+stills/
+# root-level copy of the finished video (the published copy is in example/dog-head-pat/out/)
+/Stop-Patting-Your-Dog.mp4

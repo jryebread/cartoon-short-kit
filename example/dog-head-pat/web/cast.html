@@ -1,0 +1,20 @@
+<!doctype html><html><body style="margin:0;background:#9cc"><canvas id="c" width="2400" height="2000"></canvas>
+<script type="module">
+import * as T from './toon.js';
+const c=document.getElementById('c'),g=c.getContext('2d');
+const OWN={tunic:"#3f8f80",skin:"#f5c9a0",hair:"#4a2f22",pants:"#3b4a6b",shoes:"#f2f2ee",sleeve:"#3f8f80"};
+const cell=(i,fn)=>{g.save();g.translate((i%6)*400,Math.floor(i/6)*1000);g.scale(400/600,1);g.fillStyle=i%2?'#a8d0a0':'#b8dcb0';g.fillRect(0,0,600,1000);fn(new T.Pen(g));g.restore();};
+cell(0,p=>T.romanFront(p,OWN,{expr:'grin',facing:1,R:'to',toR:[520,560]}));
+cell(1,p=>T.romanFront(p,OWN,{expr:'nervous',L:'temple',noswirl:true,bob:0.45}));
+cell(2,p=>T.romanFront(p,OWN,{expr:'smile',sign:'CALM',L:'to',R:'to',toL:[230,640],toR:[370,640],bob:0.3}));
+cell(3,p=>T.dogDraw(p,{eyes:'dot',mouth:'happy',tongue:true,wag:0.6}));
+cell(4,p=>T.dogDraw(p,{eyes:'squeeze',mouth:'tight',duck:1,ears:1,tuck:1,tremble:3,brows:1,sweat:1}));
+cell(5,p=>T.dogDraw(p,{eyes:'happy',mouth:'smile',tongue:true,chinUp:0.8,lean:1,ears:0.3}));
+cell(6,p=>T.dogDraw(p,{eyes:'wide',mouth:'tight',lookUp:1,ears:-0.5}));
+cell(7,p=>T.dogDraw(p,{eyes:'shut',mouth:'wave',duck:1,ears:1,tuck:1,brows:1,crouch:1}));
+cell(8,p=>T.handDraw(p,{}));
+cell(9,p=>T.hawkDraw(p,{flap:0.3,claw:1,screech:1}));
+cell(10,p=>T.hawkDraw(p,{flap:-0.6,claw:0.3}));
+cell(11,p=>{T.fxDNA(p,0.5,0.8);});
+window.done=1;
+</script></body></html>

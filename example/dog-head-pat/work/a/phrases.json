@@ -1,0 +1,72 @@
+{
+ "duration": 21.70775,
+ "frames30": 651,
+ "source": "silence-align (cost 0.29)",
+ "segments": [
+  [
+   0.0,
+   2.335125
+  ],
+  [
+   2.840499,
+   4.626032
+  ],
+  [
+   4.989184,
+   9.491905
+  ],
+  [
+   9.987914,
+   13.116077
+  ],
+  [
+   13.253175,
+   15.912789
+  ],
+  [
+   16.310567,
+   17.037506
+  ],
+  [
+   17.177347,
+   21.469592
+  ]
+ ],
+ "phrases": [
+  {
+   "text": "Stop patting your dog on top of their head.",
+   "s": 0.0,
+   "e": 2.335
+  },
+  {
+   "text": "The reason is simpler than you think.",
+   "s": 2.84,
+   "e": 4.626
+  },
+  {
+   "text": "That looming hand triggers a threat flinch that's coded into your dog's DNA.",
+   "s": 4.989,
+   "e": 9.492
+  },
+  {
+   "text": "Looming overhead touch mimics a predatory attack,",
+   "s": 9.988,
+   "e": 13.116
+  },
+  {
+   "text": "forcing their eyes shut and trapping them in fear.",
+   "s": 13.253,
+   "e": 15.913
+  },
+  {
+   "text": "Instead,",
+   "s": 16.311,
+   "e": 17.038
+  },
+  {
+   "text": "stroke gently beneath their chin or side of the chest to unlock true calm.",
+   "s": 17.177,
+   "e": 21.47
+  }
+ ]
+}
