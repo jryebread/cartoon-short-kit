@@ -149,7 +149,3 @@ built in `web/main.js` between `// ---------- world ----------` and `// --------
 - Music is set to half the voice level (-6 dB) and sound effects slightly lower, by `mix.py`. Don't mix by hand.
 - Keep the story original. Don't recreate another creator's video shot for shot.
 
-## Credits
-
-Built on [mromidev/claude-animated-shorts](https://github.com/mromidev/claude-animated-shorts) (MIT): the `toon.ts`
-drawing library, the look values and the readability rules. 3D by [three.js](https://threejs.org) r160 (MIT).
