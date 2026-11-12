@@ -4,7 +4,10 @@
 set -e
 KIT="$(cd "$(dirname "$0")/.." && pwd)"; P="${1:?project dir}"
 mkdir -p "$P/web/lib" "$P/work" "$P/stills" "$P/out"
-cp "$KIT"/engine/*.js "$KIT"/engine/index.html "$P/web/"
+cp "$KIT"/engine/*.js "$KIT"/engine/index.html "$KIT"/engine/cast.html "$P/web/"
+# reusable characters (canonical copies live in characters/; edit them there)
+cp "$KIT"/characters/trainer/trainer.js "$KIT"/characters/collie-2d/rolldog.js "$P/web/"
+# 3D puppy + pointers (only needed for 3D-dog videos): copy with  bash tools/setup.sh <dir> && bash tools/add-puppy3d.sh <dir>
 cp "$KIT"/example/soldier/story.js "$P/web/story.js"        # starting point: rewrite for the new story
 cp "$KIT"/example/soldier/audio.py "$P/audio.py"            # starting point: rewrite the cue table
 cp "$KIT"/tools/*.mjs "$KIT"/tools/*.py "$P/" 2>/dev/null || true
@@ -16,7 +19,7 @@ fi
 # toon base: the Pen / head / face library from mromidev/claude-animated-shorts, types stripped
 if [ ! -f "$KIT/vendor/toon.ts" ]; then mkdir -p "$KIT/vendor"; git clone -q --depth 1 https://github.com/mromidev/claude-animated-shorts /tmp/_cas && cp /tmp/_cas/templates/bridge/toon.ts "$KIT/vendor/toon.ts"; fi
 node -e "const m=require('node:module'),fs=require('fs');fs.writeFileSync('$P/web/toonbase.js',m.stripTypeScriptTypes(fs.readFileSync('$KIT/vendor/toon.ts','utf8'),{mode:'strip'}))" 2>/dev/null
-cat "$P/web/toonbase.js" "$P/web/roman.js" > "$P/web/toon.js"
+cat "$P/web/toonbase.js" "$P/web/roman.js" "$P/web/trainer.js" "$P/web/rolldog.js" "$P/web/tutorfx.js" > "$P/web/toon.js"
 # playwright: use a global install if there is one
 mkdir -p "$P/node_modules"; [ -e "$P/node_modules/playwright" ] || ln -sf "$(npm root -g)/playwright" "$P/node_modules/playwright"
-echo "ready: $P   (after editing cast code run: cat web/toonbase.js web/roman.js > web/toon.js)"
+echo "ready: $P   (after editing cast code run: cat web/toonbase.js web/roman.js web/trainer.js web/rolldog.js web/tutorfx.js > web/toon.js)"

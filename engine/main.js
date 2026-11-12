@@ -426,4 +426,5 @@ window.renderFrame = (f) => {
   return true;
 };
 window.TOTAL = TOTAL;
+window.shotAt = shotAt; // read by video-preview's overlay
 window.ready = true;

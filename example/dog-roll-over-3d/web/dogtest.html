@@ -1,0 +1,18 @@
+<!doctype html><html><body style="margin:0;background:#9cc"><canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import * as THREE from './lib/three.module.js';
+import { GLTFLoader } from './lib/jsm/GLTFLoader.js';
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); r.setSize(1600, 900, false); r.setScissorTest(true);
+const g = await new GLTFLoader().loadAsync('models/dog-puppy.glb');
+const sc = new THREE.Scene(); sc.background = new THREE.Color('#bcd'); sc.add(g.scene); sc.add(new THREE.HemisphereLight('#fff', '#666', 2.5));
+g.scene.updateMatrixWorld(true);
+const box = new THREE.Box3().setFromObject(g.scene); console.log('box', JSON.stringify(box.min), JSON.stringify(box.max));
+const sk = g.scene.getObjectByProperty('type', 'SkinnedMesh'); console.log('skinned', !!sk, 'morph', JSON.stringify(sk.morphTargetDictionary));
+const v = new THREE.Vector3();
+for (const n of ['DogROOTSHJnt','Dog_Spine_TopSHJnt','Dog_Neck_TopSHJnt','Dog_Head_JawSHJnt','Dog_l_FrontLeg_ToeSHJnt','Dog_r_FrontLeg_HipSHJnt','Wolf_l_HindLeg_ToeSHJnt','Dog_l_HindLeg_HipSHJnt','Dog_Tail_01_05SHJnt','Wolf_l_Ear_01_03SHJnt']) { const o = g.scene.getObjectByName(n); o.getWorldPosition(v); console.log(n, v.toArray().map(x => x.toFixed(3)).join(',')); }
+const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3()).length();
+const views = [[1, 0, 0], [0, 0, 1], [0, 1, 0.001], [0.7, 0.4, 0.7]];
+views.forEach((d, i) => { const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 50); cam.position.copy(c).addScaledVector(new THREE.Vector3(...d).normalize(), sz * 2.2); cam.lookAt(c);
+  r.setViewport(i * 400, 250, 400, 400); r.setScissor(i * 400, 250, 400, 400); r.render(sc, cam); });
+window.done = 1;
+</script></body></html>

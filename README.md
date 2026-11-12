@@ -15,11 +15,15 @@ how to make a video like it. The finished video is at
 | Path | What it is |
 |---|---|
 | `example/dog-head-pat/` | The dog video: shot plan, characters, world, sound cues, and its own README with the exact build order |
+| `example/dog-roll-over/` | "Teach Your Dog to Roll Over": a step-by-step trick tutorial with the trainer and the roll dog |
 | `example/soldier/` | An earlier example, "The Soldier Who Never Left" |
-| `engine/` | The renderer starter files (`main.js`, `paint.js`, `roman.js`, `motion.js`) copied into each new project |
+| `engine/` | The renderer starter files (`main.js`, `paint.js`, `roman.js`, `motion.js`) copied into each new project, plus `tutorfx.js` (tutorial graphics) |
+| `characters/` | **The reusable cast** (canonical copies): `trainer/` (the bald trainer host with black stick arms), `puppy-3d/` (the rigged 3D puppy GLB + rig controller), `pointers-3d/` (3D paw cursor + POV hand), `collie-2d/` (the 2D collie). See `characters/README.md` |
 | `tools/` | `setup.sh` (new project), `timing.py`, `render.mjs`, `sheet.py`, `finish.sh` |
 | `vendor/toon.ts` | The Pen/face drawing library 
 | `SKILL.md` | The instructions Claude follows to go from idea to finished MP4 |
+| `SKILL-TRAINING-3D.md` | Dog-training tutorials with the rigged 3D puppy: where the character code lives, the POV / paw-cursor / overhead shot recipe, and how to make the puppy perform |
+| `SKILL-TRAINING-2D.md` | Dog-training tutorials with the 2D collie: the same recipe in the flat style, plus how to use the paw cursor and POV hand there |
 
 ## How the dog video was made (the original prompt)
 

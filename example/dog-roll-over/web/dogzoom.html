@@ -1,0 +1,15 @@
+<!doctype html><html><body style="margin:0;background:#9cc"><canvas id="c" width="2400" height="2000"></canvas>
+<script type="module">
+import * as T from './toon.js';
+const c=document.getElementById('c'),g=c.getContext('2d');
+const P=[
+ {legs:{down:1},look:[260,90,40]},
+ {legs:{stand:1},look:[260,170,40],mouth:'pant',tail:0.8},
+ {legsF:{down:1},legsR:{down:1},rollF:15,rollR:65,look:[90,90,140]},
+ {legs:{flop:1},rollF:90,rollR:90,look:[150,70,120],eyes:'happy'},
+ {legs:{flop:1},rollF:180,rollR:180,look:[120,150,-20],mouth:'pant'},
+ {legs:{flop:1},rollF:270,rollR:270,look:[200,80,-40]},
+];
+P.forEach((o,i)=>{g.save();g.translate((i%3)*800,Math.floor(i/3)*1000);g.fillStyle=i%2?'#a8d0a0':'#b8dcb0';g.fillRect(0,0,800,1000);g.translate(-560,-1150);g.scale(2,2);T.dogRoll(new T.Pen(g),o);g.restore();});
+window.done=1;
+</script></body></html>

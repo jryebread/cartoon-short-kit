@@ -64,7 +64,8 @@ The code kit ships **inside this skill folder** at `kit/` (engine, tools, worked
 Then run `bash <skill>/kit/tools/setup.sh ~/shorts/<slug>`. It copies the engine and tools into the project, installs the vendored three.js, strips the types from `toon.ts` with Node 22 `module.stripTypeScriptTypes`, and links Playwright. No network is needed. If the vendored files are missing, it falls back to npm or a git clone.
 - Requirements: Node 22.6+, Python 3 with numpy + Pillow, ffmpeg, and Playwright with Chromium (`npm i -g playwright && npx playwright install chromium` if missing).
 - If package registries are blocked, git over GitHub usually works. Never disable TLS or route around the proxy.
-- Chromium: use the pre-installed Playwright browser with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. That gives CPU WebGL at about 3-10 s per frame.
+- Chromium: use the pre-installed Playwright browser. `render.mjs` defaults to CPU WebGL (`--use-angle=swiftshader`, about 1-10 s per frame); on a Mac with a GPU run it as `GPU=1 node render.mjs ...` (Metal via ANGLE, about 0.06 s per frame, same pixels).
+- Preview before the full render in `video-preview/` (Remotion Studio): `npm run use -- ../example/<slug>` then `npm run studio`; it plays the real scene with audio and a frame/shot/word overlay so the user can give feedback by frame number.
 
 ### 4.1 Timing
 Run `python3 timing.py voice.mp3 script.txt --out work`.

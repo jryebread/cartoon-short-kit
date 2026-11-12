@@ -9,3 +9,12 @@ frames/
 stills/
 # root-level copy of the finished video (the published copy is in example/dog-head-pat/out/)
 /Stop-Patting-Your-Dog.mp4
+
+# big/derived stuff stays local
+video-preview/
+example/*/out/
+example/*/web/models/
+example/*/stills/
+*.mp4
+example/*/web/lib/three.module.js
+*.log
