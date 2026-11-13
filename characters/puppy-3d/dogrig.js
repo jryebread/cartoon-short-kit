@@ -4,7 +4,8 @@
 //
 // Dog space: x = dog's LEFT, y = up, z = forward (nose). 1 unit = 1 m at scale 1 (puppy is 0.31 m tall, 0.47 m long).
 //   const dog = makeDog(gltf, { scale })   -> { root (Object3D to place in the world), mesh, pose(params), headWorld(), noseWorld() }
-//   dog.pose({ w: { stand, sit, down, hip, flop }, roll, look: Vector3|null (world), neck, tail, wag, ears, blink, breath, jaw, pedal })
+//   dog.pose({ w: { stand, sit, down, hip, tuck, flop, nest, ... }, roll, look: Vector3|null (world), neck, tail, wag, ears, blink, breath, jaw, pedal,
+//              curl (spine bend, + = toward its left), gait: { phase, amp, lift, k } (optional walk cycle) })
 import * as THREE from './lib/three.module.js';
 
 const B = {
@@ -51,8 +52,24 @@ export const POSES = {
   gather: { drop: 0.02, pitch: 0, L: {
     flS: [45, 0, 0], flE: [-70, 0, 0], flW: [50, 0, 0],
     hlH: [-55, 0, 0], hlK: [50, 0, 0], hlJ: [-40, 0, 0], hlA: [30, 0, 0], t1: [-10, 0, 0] } },
+  // curled up to sleep ("nose under the tail"): legs tucked, slight hip tilt. Use with curl ~135, wag ~-3.5 (tail wraps
+  // to the left), and look at a point beside the left hip (dog space ~[0.28, 0, -0.28]) so the head turns back to the tail.
+  nest: { drop: 0.115, dropF: 0.12, pitch: 0, rollR: -30, L: {
+    flS: [75, 0, -10], flE: [-140, 0, 0], flW: [120, 0, 0], flB: [20, 0, 0],
+    hlH: [-75, 0, -25], hlK: [125, 0, 0], hlJ: [-85, 0, 0], hlA: [50, 0, 0], t1: [-15, 0, 25] } },
 };
 const MIRROR = { flC: 'frC', flS: 'frS', flE: 'frE', flW: 'frW', flB: 'frB', hlH: 'hrH', hlK: 'hrK', hlJ: 'hrJ', hlA: 'hrA', hlB: 'hrB', elA: 'erA', elB: 'erB' };
+// Walk cycle (optional): pose({ gait: { phase, amp, lift, k } }) adds a 4-beat walk on top of the blended legs.
+// phase = step-cycle position (1.0 = one full stride; advance it with the distance walked), amp = hip swing (deg),
+// lift = how high the swinging paw folds up (0..1.5), k = 0..1 blend in/out. Footfall order: LH, LF, RH, RF.
+const GAIT = { flS: ['F', 0.25, 0], flE: ['F', 0.25, 1], flW: ['F', 0.25, 2], hlH: ['H', 0, 0], hlK: ['H', 0, 1], hlJ: ['H', 0, 2], hlA: ['H', 0, 3],
+  frS: ['F', 0.75, 0], frE: ['F', 0.75, 1], frW: ['F', 0.75, 2], hrH: ['H', 0.5, 0], hrK: ['H', 0.5, 1], hrJ: ['H', 0.5, 2], hrA: ['H', 0.5, 3] };
+const gaitAngles = (g, key) => {
+  const [end, off, j] = GAIT[key], k = g.k ?? 1, A = (g.amp ?? 24) * k, L = (g.lift ?? 1) * k;
+  const ph = 2 * Math.PI * (g.phase + off), swing = A * Math.sin(ph), up = Math.max(0, -Math.cos(ph)) ** 1.4 * L; // up while the leg swings forward
+  if (end === 'F') return [[swing, 0, 0], [-58 * up, 0, 0], [62 * up, 0, 0]][j];
+  return [[swing - 4 * up, 0, 0], [46 * up, 0, 0], [-34 * up, 0, 0], [20 * up, 0, 0]][j];
+};
 const AX = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
 const D2R = Math.PI / 180;
 
@@ -117,6 +134,7 @@ export const makeDog = (gltf, { scale = 1.6 } = {}) => {
       if (pedal && /^(fl|fr|hl|hr)[SEHK]$/.test(key)) { const ph = pedal + (key[0] === 'h' ? 1.7 : 0) + (isRight ? 2.6 : 0); v = (v || [0, 0, 0]).map((x, i) => (i === 0 ? x + 16 * Math.sin(ph) : x)); }
       if (v) applyTriple(key, v, isRight);
       if (!isRight && w.hip && POSES.hip.asym) { const a = POSES.hip.asym[key]; if (a) applyTriple(key, a.map((x) => x * w.hip), false); } // one-sided: upper hind leg folds down
+      if (o.gait && GAIT[key]) applyTriple(key, gaitAngles(o.gait, key), isRight);
     }
     // pelvis tips onto one hip AFTER the legs are folded (so the folded legs tip with it); the chest stays up
     if (rollR) { rotDog(rb, AX[2], -rollR); rotDog(bones.sp1, AX[2], rollR * 0.85); }

@@ -11,7 +11,9 @@ const dog = makeDog(await new GLTFLoader().loadAsync('models/dog-puppy.glb'), { 
 scene.add(dog.root);
 dog.root.position.set(x, y, z); dog.root.rotation.y = yaw;
 dog.pose({
-  w: { stand, sit, down, hip, tuck, flop },   // blended leg/body poses (weights are normalised)
+  w: { stand, sit, down, hip, tuck, flop, nest },   // blended leg/body poses (weights are normalised); nest = curled up asleep
+  gait: { phase, amp, lift, k },   // optional 4-beat walk cycle on top of the pose (phase 1.0 = one stride)
+  curl: 60,           // spine bend (+ = toward its left); ~135 for the nest
   roll: -90,          // full-body roll in deg (0 upright, -90 on its right side, -180 belly-up, -360 rolled over)
   twist,              // optional head-vs-body roll (default keeps the head upright; see twistFor() in the example story)
   look: new THREE.Vector3(...),   // head follows a world point (e.g. the treat)
