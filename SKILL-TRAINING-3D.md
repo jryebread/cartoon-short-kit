@@ -60,7 +60,6 @@ character, edit it in `characters/`, then run the project's `./build.sh`. That r
 - **Audio levels:** the music bed sits at 50 % of the voice level (−6 dB, gated RMS). SFX sit at 50 % or slightly less, with peaks
   capped. Always mix with `mix.py`, never by hand. Use no ducking or compression; only one linear gain plus a peak limiter goes on the whole mix.
 - Keep the user informed with a task list.
-- **Training content must be accurate and humane.** Show real, positive-reinforcement technique (lure, mark, reward) and show
   common mistakes as mistakes (red path, cross). Never show punishment or physical force.
 
 ## Stage 1: Intake (always first)
