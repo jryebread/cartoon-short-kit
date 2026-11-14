@@ -5,7 +5,7 @@
 // Dog space: x = dog's LEFT, y = up, z = forward (nose). 1 unit = 1 m at scale 1 (puppy is 0.31 m tall, 0.47 m long).
 //   const dog = makeDog(gltf, { scale })   -> { root (Object3D to place in the world), mesh, pose(params), headWorld(), noseWorld() }
 //   dog.pose({ w: { stand, sit, down, hip, tuck, flop, nest, ... }, roll, look: Vector3|null (world), neck, tail, wag, ears, blink, breath, jaw, pedal,
-//              curl (spine bend, + = toward its left), gait: { phase, amp, lift, k } (optional walk cycle) })
+//              aimEyes (true: the eyes, not the head->jaw line, aim at `look`; keeps the face level), curl (spine bend, + = toward its left), gait: { phase, amp, lift, k } (optional walk cycle) })
 import * as THREE from './lib/three.module.js';
 
 const B = {
@@ -41,6 +41,17 @@ export const POSES = {
   flop: { drop: 0.1, dropF: 0.1, pitch: 0, L: {
     flS: [-24, 0, 0], flE: [-40, 0, 0], flW: [40, 0, 0], flB: [10, 0, 0],
     hlH: [-20, 0, 0], hlK: [40, 0, 0], hlJ: [-30, 0, 0], hlA: [30, 0, 0], t1: [-10, 0, 0] } },
+  // shake / give paw: a sit with the LEFT front paw raised forward (blend sit -> shake to lift it)
+  shake: { drop: 0.105, dropF: 0.0, pitch: 36, L: {
+    hlH: [-58, 0, -6], hlK: [80, 0, 0], hlJ: [-70, 0, 0], hlA: [46, 0, 0],
+    flS: [-50, 0, 6], flE: [-40, 0, 0], flW: [34, 0, 0], t1: [-40, 0, 0] },
+    R: { flS: [30, 0, 0], flE: [0, 0, 0], flW: [-6, 0, 0] } },   // R = right-side overrides (left key names, values before mirroring)
+  // high five: a sit with the LEFT front paw raised high and out to the side, pad facing forward (clear of the face).
+  // Blend sit -> shake -> five for a lift that rises; the paw ball (boneWorld('flB')) is where a palm should meet it.
+  five: { drop: 0.105, dropF: 0.0, pitch: 36, L: {
+    hlH: [-58, 0, -6], hlK: [80, 0, 0], hlJ: [-70, 0, 0], hlA: [46, 0, 0],
+    flS: [-80, 0, -22], flE: [-30, 0, 0], flW: [30, 0, 0], t1: [-40, 0, 0] },
+    R: { flS: [30, 0, 0], flE: [0, 0, 0], flW: [-6, 0, 0] } },
   // play bow: elbows on the ground, rump up (also reads as a tug-of-war stance)
   bow: { drop: 0.0, pitch: -26, L: {
     flS: [48, 0, -4], flE: [-118, 0, 0], flW: [24, 0, 0], flB: [10, 0, 0],
@@ -58,6 +69,8 @@ export const POSES = {
     flS: [75, 0, -10], flE: [-140, 0, 0], flW: [120, 0, 0], flB: [20, 0, 0],
     hlH: [-75, 0, -25], hlK: [125, 0, 0], hlJ: [-85, 0, 0], hlA: [50, 0, 0], t1: [-15, 0, 25] } },
 };
+// right-paw versions of the one-paw poses: shakeR / fiveR raise the dog's RIGHT front paw (the left one stays as in the sit)
+for (const k of ['shake', 'five']) { const P = POSES[k]; POSES[k + 'R'] = { ...P, L: { ...P.L, ...P.R }, R: { flS: P.L.flS, flE: P.L.flE, flW: P.L.flW } }; }
 const MIRROR = { flC: 'frC', flS: 'frS', flE: 'frE', flW: 'frW', flB: 'frB', hlH: 'hrH', hlK: 'hrK', hlJ: 'hrJ', hlA: 'hrA', hlB: 'hrB', elA: 'erA', elB: 'erB' };
 // Walk cycle (optional): pose({ gait: { phase, amp, lift, k } }) adds a 4-beat walk on top of the blended legs.
 // phase = step-cycle position (1.0 = one full stride; advance it with the distance walked), amp = hip swing (deg),
@@ -88,7 +101,8 @@ export const makeDog = (gltf, { scale = 1.6 } = {}) => {
   scene.updateMatrixWorld(true);
   const hq0 = bones.head.getWorldQuaternion(new THREE.Quaternion());
   const snoutLocal = bones.jaw.getWorldPosition(new THREE.Vector3()).sub(bones.head.getWorldPosition(new THREE.Vector3())).normalize().applyQuaternion(hq0.clone().invert());
-  const snoutLen = 0.115; // head pivot -> nose tip at scale 1 (m)
+  const snoutLen = 0.115;
+  const restPitch = (() => { const hf = snoutLocal.clone().applyQuaternion(hq0).applyQuaternion(body.getWorldQuaternion(new THREE.Quaternion()).invert()); return Math.atan2(hf.y, Math.hypot(hf.x, hf.z)); })(); // head pivot -> nose tip at scale 1 (m)
   /** rotate a bone by deg about a dog-space axis, around its own pivot */
   const rotDog = (bone, axis, deg) => {
     if (!deg) return;
@@ -125,12 +139,12 @@ export const makeDog = (gltf, { scale = 1.6 } = {}) => {
     // spine curl toward the head turn (makes the body follow the lure)
     const curl = o.curl || 0; for (const k of ['sp2', 'sp3', 'sp4']) rotDog(bones[k], AX[1], curl / 3);
     // legs (blend each bone's triple)
-    const blend = (key) => { const v = [0, 0, 0]; let any = false; for (const k in w) if (w[k]) { const t = POSES[k].L[key]; if (t) { any = true; for (let i = 0; i < 3; i++) v[i] += t[i] * w[k]; } } return any ? v : null; };
+    const blend = (key, right) => { const v = [0, 0, 0]; let any = false; for (const k in w) if (w[k]) { const t = (right && POSES[k].R && POSES[k].R[key]) || POSES[k].L[key]; if (t) { any = true; for (let i = 0; i < 3; i++) v[i] += t[i] * w[k]; } } return any ? v : null; };
     const pedal = o.pedal || 0;
     for (const key of ORDER) {
       if (key === 'root') continue;
       const isRight = Object.values(MIRROR).includes(key), src = isRight ? Object.keys(MIRROR).find((k) => MIRROR[k] === key) : key;
-      let v = blend(src);
+      let v = blend(src, isRight);
       if (pedal && /^(fl|fr|hl|hr)[SEHK]$/.test(key)) { const ph = pedal + (key[0] === 'h' ? 1.7 : 0) + (isRight ? 2.6 : 0); v = (v || [0, 0, 0]).map((x, i) => (i === 0 ? x + 16 * Math.sin(ph) : x)); }
       if (v) applyTriple(key, v, isRight);
       if (!isRight && w.hip && POSES.hip.asym) { const a = POSES.hip.asym[key]; if (a) applyTriple(key, a.map((x) => x * w.hip), false); } // one-sided: upper hind leg folds down
@@ -158,7 +172,7 @@ export const makeDog = (gltf, { scale = 1.6 } = {}) => {
         // current head forward in dog space ~ +z rotated by the head bone; approximate with the neck chain's direction
         const hf = snoutLocal.clone().applyQuaternion(hb.getWorldQuaternion(new THREE.Quaternion())).applyQuaternion(body.getWorldQuaternion(new THREE.Quaternion()).invert());
         const yawT = Math.atan2(d.x, d.z), yawC = Math.atan2(hf.x, hf.z);
-        const pitT = Math.atan2(d.y, Math.hypot(d.x, d.z)), pitC = Math.atan2(hf.y, Math.hypot(hf.x, hf.z));
+        const pitT = Math.atan2(d.y, Math.hypot(d.x, d.z)) + (o.aimEyes ? restPitch : 0), pitC = Math.atan2(hf.y, Math.hypot(hf.x, hf.z));
         let dy = yawT - yawC; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
         rotDog(bones[k], AX[1], (dy / D2R) * share * neck / (1 - (k === 'n1' ? 0 : k === 'n2' ? 0.3 : 0.6)));
         rotDog(bones[k], new THREE.Vector3(Math.cos(yawT), 0, -Math.sin(yawT)), -((pitT - pitC) / D2R) * share * neck / (1 - (k === 'n1' ? 0 : k === 'n2' ? 0.3 : 0.6)));

@@ -8,9 +8,15 @@
 //   import { makePointers } from './pointers3d.js';
 //   const ptr = makePointers(THREE, scene, { toon: (o) => new THREE.MeshToonMaterial({ gradientMap, ...o }), glowTex });
 //   // every frame, after the camera is placed:
-//   ptr.update(camera, f, { paw: { pos: [x, y, z], s, lift, tilt, press } | null, hand: { treat: [x, y, z], open, side, roll, sag, tilt } | null, hand2: same (left hand) });
+//   ptr.update(camera, f, { paw: { pos: [x, y, z], s, lift, tilt, press } | null, hand: HAND | null, hand2: HAND (left hand) });
+//   HAND = { at (or treat): [x,y,z] the grip point (biscuit between the fingers, inside the fist, or the palm centre),
+//            pose: 'pinch' | 'fist' | 'five' | 'open' | 'cup' | 'point' | 'thumb' | 'relax' | { a, b, k } (blend, e.g. pinch -> fist),
+//            face: [x,y,z] what it reaches toward / the palm faces (e.g. the dog's paw), tilt, roll (rad), side (arm base offset),
+//            sag, palm / fingers: explicit world directions, grip: which hand point lands on `at` ('back' = top of a fist, see hand3d grip()). Legacy: { treat, open: true } = palm-up tray, { treat } = pinch. }
+// The hand is characters/hand-3d/hand3d.js; copy it next to this file.
 // glowTex: any soft radial-gradient texture (white centre -> transparent). Meshes flagged userData.ndSkip are left out of the ink pass.
-export const makePointers = (THREE, scene, { toon, glowTex, skin = '#f2c4a0', arm = '#17171c', handScale = 1.2, armRadius = 0.021 } = {}) => {
+import { makeHand, orientHand } from './hand3d.js';
+export const makePointers = (THREE, scene, { toon, glowTex, skin = '#f2c4a0', arm = '#17171c', handScale = 1.25, armRadius = 0.02 } = {}) => {
   const M = {};
 // paw cursor: a puffy, glossy white paw with pink beans, a spinning gold halo and a soft glow
 M.pawW = new THREE.MeshPhongMaterial({ color: '#fbfaf7', specular: '#ffffff', shininess: 90 });
@@ -28,50 +34,47 @@ const halo = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.006, 8, 64), new TH
 halo.userData.ndSkip = true; paw.add(halo);
 const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, opacity: 0.55 }));
 glow.userData.ndSkip = true; glow.position.z = -0.03; paw.add(glow);
-// POV hands: a pinch hand (biscuit pinched at the group origin, arm leaves along +z) and an open palm (palm up, biscuit
-// resting on it, fingers toward the dog). Two rigs, so W.hand (right, side +0.16) and W.hand2 (left, side -0.16) can both show.
-M.skin = toon({ color: skin }); M.hose = toon({ color: arm });
-const part = (grp, g, m, pos, rot, sc) => { const o = new THREE.Mesh(g, m); o.position.set(...pos); if (rot) o.rotation.set(...rot); if (sc) o.scale.set(...sc); o.castShadow = true; grp.add(o); return o; };
-const makePinch = () => {
-  const hand = new THREE.Group(); scene.add(hand); const g = new THREE.Group(); hand.add(g); g.scale.setScalar(handScale);
-  part(g, new THREE.SphereGeometry(0.05, 24, 16), M.skin, [0, 0.03, 0.075], [0.25, 0, 0], [0.95, 0.5, 1.05]);           // back of the hand
-  for (const [i, x] of [-0.03, -0.01, 0.01, 0.03].entries()) {                                                         // curled fingers
-    const L = i === 3 ? 0.03 : 0.042;
-    part(g, new THREE.CapsuleGeometry(0.0115, L, 6, 12), M.skin, [x, 0.03, 0.03 - (i === 0 ? 0 : 0.004 * i)], [Math.PI / 2 - 0.15, 0, 0]);
-    part(g, new THREE.CapsuleGeometry(0.0105, 0.02, 6, 12), M.skin, [x * 0.92, 0.013, 0.007 + 0.003 * i], [0.5, 0, 0]);
-  }
-  part(g, new THREE.CapsuleGeometry(0.013, 0.04, 6, 12), M.skin, [-0.046, -0.002, 0.04], [Math.PI / 2 - 0.5, -0.6, 0.2]); // thumb under
-  part(g, new THREE.CylinderGeometry(0.03, 0.028, 0.03, 20), M.hose, [0, 0.035, 0.125], [Math.PI / 2 - 0.25, 0, 0]);      // black cuff
-  return hand;
-};
-const makeOpen = (mirror) => {
-  const hand = new THREE.Group(); scene.add(hand); const g = new THREE.Group(); hand.add(g); g.scale.set(mirror ? -handScale : handScale, handScale, handScale);
-  part(g, new THREE.SphereGeometry(0.05, 24, 16), M.skin, [0, -0.034, 0.03], null, [1.0, 0.32, 1.15]);                    // flat palm, facing up
-  for (const [i, x] of [-0.03, -0.01, 0.01, 0.03].entries())                                                            // straight fingers toward the dog
-    part(g, new THREE.CapsuleGeometry(0.0105, i === 3 ? 0.03 : 0.042, 6, 12), M.skin, [x * 1.05, -0.03, -0.04 + (i === 3 ? 0.008 : 0) + (i === 0 ? 0.004 : 0)], [Math.PI / 2 + 0.12, 0, 0]);
-  part(g, new THREE.CapsuleGeometry(0.012, 0.035, 6, 12), M.skin, [-0.058, -0.03, 0.01], [Math.PI / 2, 0, -0.9]);        // thumb out to the side
-  part(g, new THREE.CylinderGeometry(0.03, 0.028, 0.03, 20), M.hose, [0, -0.034, 0.09], [Math.PI / 2, 0, 0]);             // black cuff
-  return hand;
-};
-const rigs = [{ pinch: makePinch(), open: makeOpen(false), arm: null }, { pinch: makePinch(), open: makeOpen(true), arm: null }];
-const hand = rigs[0].pinch;
+// POV hands: the polished posable hand from characters/hand-3d/hand3d.js (one smooth tube per finger, nails, cupping palm)
+// on a stretchy black stick arm that reaches in from below the frame. Two rigs: W.hand = right hand, W.hand2 = left hand.
+M.hose = toon({ color: arm });
+const FAMILY = { pinch: 'reach', fist: 'reach', point: 'reach', relax: 'reach', thumb: 'reach', five: 'up', open: 'up', cup: 'tray' };
+const GRIP = { pinch: 'pinch', fist: 'fist', point: 'fist', relax: 'pinch', thumb: 'fist', five: 'palm', open: 'palm', cup: 'cup' };
+const rigs = [false, true].map((mirror) => { const h = makeHand(THREE, { toon, skin, mirror }); scene.add(h.group); return { h, arm: null }; });
+const hand = rigs[0].h.group;
+const V3 = (a) => new THREE.Vector3(...a);
 const drawHand = (R, hd, camera, f) => {
-  R.pinch.visible = !!hd && !hd.open; R.open.visible = !!hd && !!hd.open; if (R.arm) R.arm.visible = !!hd;
+  R.h.group.visible = !!hd; if (R.arm) R.arm.visible = !!hd;
   if (!hd) return;
   const fw = new THREE.Vector3(), up = new THREE.Vector3(), rt = new THREE.Vector3();
   camera.getWorldDirection(fw); up.copy(camera.up).applyQuaternion(camera.quaternion); rt.crossVectors(fw, up).normalize(); up.crossVectors(rt, fw).normalize();
   const base = camera.position.clone().addScaledVector(fw, 0.3).addScaledVector(up, -0.42).addScaledVector(rt, hd.side ?? 0.16);
-  const tp = new THREE.Vector3(...hd.treat), H = hd.open ? R.open : R.pinch;
-  H.position.copy(tp);
-  if (hd.open) { H.up.set(0, 1, 0); H.lookAt(base.x, tp.y, base.z); H.rotateX(hd.tilt ?? 0.15); }   // palm up, arm side toward the base
-  else { H.up.copy(up); H.lookAt(tp.clone().lerp(base, 0.6).addScaledVector(up, 0.12)); }
-  H.rotateZ(hd.roll || 0);
-  H.updateMatrixWorld(true);
-  const wrist = (hd.open ? new THREE.Vector3(0, -0.034, 0.1) : new THREE.Vector3(0, 0.035, 0.13)).multiplyScalar(handScale).applyMatrix4(H.matrixWorld);
-  const mid = wrist.clone().lerp(base, 0.5).addScaledVector(up, 0.07 + (hd.sag || 0));
-  const curve = new THREE.QuadraticBezierCurve3(base, mid, wrist);
-  if (R.arm) { R.arm.geometry.dispose(); R.arm.geometry = new THREE.TubeGeometry(curve, 40, armRadius, 14, false); }
-  else { R.arm = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, armRadius, 14, false), M.hose); R.arm.castShadow = true; scene.add(R.arm); }
+  // pose: hd.pose (preset name or { a, b, k } blend); legacy: hd.open -> palm-up tray, else a pinch
+  const spec = hd.pose ?? (hd.open ? 'cup' : 'pinch');
+  const nm = typeof spec === 'string' ? spec : (spec.k ?? 0) < 0.5 ? spec.a : spec.b;
+  R.h.setPose(spec);
+  const gk = (n) => R.h.grip(GRIP[n] || 'pinch');
+  const grip = hd.grip ? R.h.grip(hd.grip) : typeof spec === 'string' ? gk(spec) : gk(spec.a).lerp(gk(spec.b ?? spec.a), spec.k ?? 0);
+  const at = V3(hd.at ?? hd.treat), fam = hd.mode ?? FAMILY[nm] ?? 'reach';
+  let palm, fingers;
+  if (fam === 'up') {          // high-five: palm faces hd.face (default: straight ahead), fingers up, tipped by hd.tilt toward it
+    const tw = hd.face ? V3(hd.face).sub(at) : fw.clone(); tw.y *= 0.25; tw.normalize();
+    palm = tw.clone(); fingers = new THREE.Vector3(0, 1, 0).addScaledVector(tw, hd.tilt ?? 0.15);
+  } else if (fam === 'tray') { // palm up, fingers toward hd.face / away from the arm
+    const tw = hd.face ? V3(hd.face).sub(at) : at.clone().sub(base); tw.y = 0; tw.normalize();
+    palm = new THREE.Vector3(0, 1, 0).addScaledVector(tw, -(hd.tilt ?? 0.15)); fingers = tw;
+  } else {                     // reach: fingers continue the arm toward the target, back of the hand up
+    fingers = at.clone().sub(base).normalize(); fingers.y *= 0.4; if (hd.face) { const fd = V3(hd.face).sub(at); fd.y *= 0.25; fingers.lerp(fd.normalize(), 0.6); } fingers.y -= 0.12; fingers.normalize();
+    palm = up.clone().negate().addScaledVector(fingers, -up.clone().negate().dot(fingers)).normalize();
+  }
+  if (hd.palm) palm = V3(hd.palm); if (hd.fingers) fingers = V3(hd.fingers);
+  if (hd.roll) palm.applyAxisAngle(fingers.clone().normalize(), hd.roll);   // + rolls the thumb side up (right hand)
+  const o = orientHand(THREE, R.h, { at: at.toArray(), palm: palm.toArray(), fingers: fingers.toArray(), grip, scale: handScale });
+  // stick arm: leaves the wrist along the forearm, bows a little, ends below the frame
+  const L = o.wrist.distanceTo(base);
+  const c1 = o.wrist.clone().addScaledVector(o.fore, L * 0.42).addScaledVector(up, hd.sag || 0);
+  const curve = new THREE.QuadraticBezierCurve3(base, c1, o.wrist.clone().addScaledVector(o.fore, -0.004));
+  if (R.arm) { R.arm.geometry.dispose(); R.arm.geometry = new THREE.TubeGeometry(curve, 48, armRadius, 16, false); }
+  else { R.arm = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, armRadius, 16, false), M.hose); R.arm.castShadow = true; scene.add(R.arm); }
 };
   const update = (camera, f, W) => {
   // paw cursor (floating shots)
@@ -89,5 +92,5 @@ const drawHand = (R, hd, camera, f) => {
   drawHand(rigs[0], W.hand, camera, f);
   drawHand(rigs[1], W.hand2 && { side: -0.16, ...W.hand2 }, camera, f);
   };
-  return { paw, hand, update };
+  return { paw, hand, update, rigs };
 };

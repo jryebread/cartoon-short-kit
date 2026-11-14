@@ -28,17 +28,19 @@ no separate `kit/` folder inside a skill directory, and projects do **not** go i
 | `characters/README.md` | Index of the reusable cast. **These folders are the canonical copies.** Projects copy them into their own `web/`. |
 | `characters/trainer/trainer.js` | **The trainer**, the recurring host: `trainerDraw(p, opts)`, `trainerShoulder(opts, side)`. README in the same folder. |
 | `characters/puppy-3d/dogrig.js` + `models/dog-puppy.glb` (+ `textures/`) + `lib/` (GLTFLoader) | **The 3D puppy** and its rig controller `makeDog(gltf).pose(params)`. |
-| `characters/pointers-3d/pointers3d.js` | **Paw cursor + POV hand on a black arm**: `makePointers(THREE, scene, opts).update(camera, f, W)`. |
+| `characters/pointers-3d/pointers3d.js` | **Paw cursor + POV hands on black arms**: `makePointers(THREE, scene, opts).update(camera, f, W)`. |
+| `characters/hand-3d/hand3d.js` (+ `models/*.glb`) | **The polished POV hand** used by the pointers: smooth posable cartoon hand, presets `pinch fist five open cup point thumb relax`, blendable. README in the same folder. |
 | `characters/collie-2d/rolldog.js` | The 2D collie (used by the 2D skill, `SKILL-TRAINING-2D.md`). |
 | `engine/` | Renderer starter files (`main.js`, `paint.js`, `roman.js`, `motion.js`, `index.html`, `cast.html`, `tutorfx.js`). |
 | `tools/setup.sh` | New project: `bash tools/setup.sh example/<slug>` (copies the engine, the trainer and the collie). |
-| `tools/add-puppy3d.sh` | Adds the 3D puppy + pointers: `bash tools/add-puppy3d.sh example/<slug>`. |
+| `tools/add-puppy3d.sh` | Adds the 3D puppy + pointers + hand: `bash tools/add-puppy3d.sh example/<slug>`. |
 | `example/dog-roll-over-3d/` | **The worked example.** Copy its `web/story.js`, `web/main.js`, `audio.py`, `build.sh`, `posetest.sh`, `snap.mjs`, `web/posetest.html` as your starting point. |
 | `video-preview/` | Remotion Studio preview of any project, with a frame/shot/word overlay. |
 
 Projects live in `example/<slug>/`. A project's `web/` holds **copies** of the characters, so it stays self-contained. To edit a
-character, edit it in `characters/`, then run the project's `./build.sh`. That re-copies `trainer.js`, `dogrig.js` and
-`pointers3d.js` into `web/` and rebuilds `web/toon.js`.
+character, edit it in `characters/`, then run the project's `./build.sh`. That re-copies `trainer.js`, `dogrig.js`,
+`pointers3d.js` and `hand3d.js` into `web/` and rebuilds `web/toon.js`. Paw tricks (shake, high five, paw at a fist):
+see `example/dog-high-five/` (one `raise` value: 0 sit, 1 `shakeR`, 2 `fiveR`, with paw positions calibrated into `REF.raise`).
 
 ## Standing user preferences (do not break)
 - **No white flashes between scenes. (changed)** Use hard cuts or continuous camera moves. Never set `c.flash` on a cut,
@@ -273,8 +275,10 @@ Try 4-6 variants side by side, pick the best, then write it into `POSES`.
     and the halo opacity breathes.
   - **While the dog acts on its own**, it hovers near the nose without leading.
   - Scale 0.85-1.15 (bigger for the hero arc).
-- **POV hand:** pinches the biscuit at the treat point, oriented toward an arm base just below the bottom-right of the frame
-  (camera + forward·0.3 − up·0.42 + right·0.16). The black tube arm is a quadratic Bézier with a slight upward bow, rebuilt every
+- **POV hand** (`characters/hand-3d`, see its README): `W.hand = { at, pose, mode, grip, face }`. The pinch holds the biscuit at
+  the treat point; a fist the dog paws at uses `grip: 'back'` so the paw lands on top; the high five is `pose: 'five', mode: 'up', face: pawPoint`.
+  The arm base sits just below the frame (camera + forward·0.3 − up·0.42 + right·side).
+  For high fives in POV, put the camera off to the side of the raised paw (z ≈ −0.2 for the right paw) so the palm doesn't cover the face. The black tube arm is a quadratic Bézier with a slight upward bow, rebuilt every
   frame. `handScale 1.2` and `armRadius 0.021` read well; bigger hides the face. After a reward, keep the hand at the mouth for
   about 10 frames with `treatHide: true` (the treat is being eaten).
 - **Trails:** sample `treatPath` every 0.5 frame and keep a point every 0.03 m (InstancedMesh beads, 160 max). Colour by meaning:

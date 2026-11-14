@@ -1,0 +1,18 @@
+<!doctype html><html><body><script type="module">
+// exports every HAND_POSES preset (right + left) as a binary glTF -> window.out = { name: base64 }
+import * as THREE from './lib/three.module.js';
+import { GLTFExporter } from './lib/jsm/GLTFExporter.js';
+import { makeHand, HAND_POSES } from './hand3d.js';
+const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.75, metalness: 0, ...o });
+const out = {};
+for (const mirror of [false, true]) for (const name of Object.keys(HAND_POSES)) {
+  const h = makeHand(THREE, { toon: std, mirror, soft: false }); h.setPose(name);
+  const root = new THREE.Group(); root.name = `hand-${mirror ? 'left' : 'right'}-${name}`; root.add(h.group);
+  const g = h.grip(name === 'pinch' ? 'pinch' : name === 'cup' ? 'cup' : ['five', 'open'].includes(name) ? 'palm' : 'fist');
+  const grip = new THREE.Object3D(); grip.name = 'grip'; grip.position.copy(g); root.add(grip);
+  const buf = await new GLTFExporter().parseAsync(root, { binary: true });
+  const u8 = new Uint8Array(buf); let bin = ''; for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  out[root.name] = btoa(bin);
+}
+window.out = out; window.done = 1;
+</script></body></html>

@@ -2,7 +2,7 @@
 # Creates a new short project:  bash tools/setup.sh <project_dir>
 # Needs: node >= 22.6 (type stripping), python3 + numpy, ffmpeg, git, Playwright Chromium (npx playwright install chromium if missing).
 set -e
-KIT="$(cd "$(dirname "$0")/.." && pwd)"; P="${1:?project dir}"
+KIT="$(cd "$(dirname "$0")/.." && pwd)"; P="${1:?project dir}"; mkdir -p "$P"; P="$(cd "$P" && pwd)"
 mkdir -p "$P/web/lib" "$P/work" "$P/stills" "$P/out"
 cp "$KIT"/engine/*.js "$KIT"/engine/index.html "$KIT"/engine/cast.html "$P/web/"
 # reusable characters (canonical copies live in characters/; edit them there)

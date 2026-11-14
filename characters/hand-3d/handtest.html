@@ -1,0 +1,34 @@
+<!doctype html><html><body style="margin:0;background:#cfe0e8"><canvas id="c" width="1800" height="1000"></canvas>
+<script type="module">
+// hand pose sheet: handtest.html?poses=open,fist#[[x,y,z],...]   rows = poses, columns = view directions
+import * as THREE from './lib/three.module.js';
+import { makeHand, HAND_POSES } from './hand3d.js';
+const qs = new URLSearchParams(location.search);
+const poses = (qs.get('poses') || Object.keys(HAND_POSES).join(',')).split(',');
+const views = JSON.parse(decodeURIComponent(location.hash.slice(1)) || '0') || [[0, 0.3, 1], [0, 0.2, -1], [-1, 0.3, 0.1], [-0.6, 0.6, 0.8]];
+const W = 1800, H = 1000;
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); r.setSize(W, H, false); r.setScissorTest(true);
+r.outputColorSpace = THREE.SRGBColorSpace;
+const grad = (() => { const d = new Uint8Array([120, 120, 120, 255, 200, 200, 200, 255, 255, 255, 255, 255]); const t = new THREE.DataTexture(d, 3, 1); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
+const toon = (o) => new THREE.MeshToonMaterial({ gradientMap: grad, ...o });
+const sc = new THREE.Scene(); sc.background = new THREE.Color('#cfe0e8');
+sc.add(new THREE.HemisphereLight('#ffffff', '#8a8262', 1.3)); const sun = new THREE.DirectionalLight('#fff1dc', 2.2); sun.position.set(1, 2, 1.5); sc.add(sun);
+const h = makeHand(THREE, { toon, mirror: qs.get('mirror') === '1' }); sc.add(h.group);
+// outline: inverted hull clones refreshed after each pose
+const ol = new THREE.MeshBasicMaterial({ color: '#111', side: THREE.BackSide });
+const hull = new THREE.Group(); sc.add(hull);
+const rows = poses.length, cols = views.length, cw = W / cols, ch = H / rows;
+poses.forEach((ps, i) => {
+  h.setPose(ps.includes(':') ? { a: ps.split(':')[0], b: ps.split(':')[1], k: +ps.split(':')[2] } : ps);
+  hull.clear(); h.inner.updateMatrixWorld(true);
+  h.inner.traverse((o) => { if (o.isMesh) { const m = new THREE.Mesh(o.geometry, ol); m.matrixAutoUpdate = false; m.matrix.copy(o.matrixWorld).multiply(new THREE.Matrix4().makeScale(1.0, 1.0, 1.0)); hull.add(m); } });
+  hull.visible = false;
+  views.forEach((d, k) => {
+    const cam = new THREE.PerspectiveCamera(30, cw / ch, 0.01, 10), c = new THREE.Vector3(0, 0.07, 0);
+    cam.position.copy(c).addScaledVector(new THREE.Vector3(...d).normalize(), 0.5); cam.lookAt(c);
+    const x = k * cw, y = H - (i + 1) * ch;
+    r.setViewport(x, y, cw, ch); r.setScissor(x, y, cw, ch); r.render(sc, cam);
+  });
+});
+window.done = 1;
+</script></body></html>
